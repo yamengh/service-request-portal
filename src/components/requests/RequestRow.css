@@ -1,0 +1,72 @@
+.request-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 140px 140px 120px;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  align-items: center;
+  background-color: var(--bg-primary);
+}
+
+.request-row:hover {
+  background-color: var(--bg-tertiary);
+  border-bottom-color: var(--border-color-hover);
+  transform: translateX(4px);
+  text-decoration: none;
+}
+
+.request-row:last-child {
+  border-bottom: none;
+}
+
+.request-cell {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.request-cell-id {
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  letter-spacing: 0.05em;
+}
+
+.request-cell-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+}
+
+@media (max-width: 768px) {
+  .request-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .request-row:hover {
+    background-color: white;
+    border-color: #2563eb;
+  }
+
+  .request-cell {
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .request-cell-id,
+  .request-cell-date {
+    font-size: 0.75rem;
+  }
+}
