@@ -42,6 +42,21 @@
   box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.5);
 }
 
+.loading-state,
+.error-state {
+  padding: 3rem;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.error-state {
+  color: var(--error);
+  background-color: var(--error-light);
+  border-radius: 0.5rem;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

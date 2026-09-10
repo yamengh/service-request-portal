@@ -1,43 +1,44 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationsContext';
 import './Navigation.css';
 
 const Navigation = () => {
+  const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const location = useLocation();
 
-  const isActive = (path) => {
-    if (path === '/dashboard') {
-      return location.pathname === '/' || location.pathname === '/dashboard';
-    }
-    return location.pathname === path;
-  };
+  if (location.pathname === '/login') {
+    return null;
+  }
 
   return (
     <nav className="navigation">
       <div className="nav-container">
         <div className="nav-brand">
-          <Link to="/dashboard" className="nav-logo">
-            Service Request Portal
+          <Link to="/" className="nav-logo">
+            Service Portal
           </Link>
         </div>
+
         <div className="nav-menu">
-          <Link 
-            to="/dashboard" 
-            className={`nav-link ${isActive('/dashboard') ? 'nav-link-active' : ''}`}
-          >
-            Dashboard
+          <Link to="/" className="nav-link">Dashboard</Link>
+          <Link to="/requests" className="nav-link">My Requests</Link>
+          <Link to="/new-request" className="nav-link">New Request</Link>
+          <Link to="/notifications" className="nav-link">
+            Notifications
+            {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
           </Link>
-          <Link 
-            to="/new-request" 
-            className={`nav-link ${isActive('/new-request') ? 'nav-link-active' : ''}`}
-          >
-            New Request
-          </Link>
-          <Link 
-            to="/requests" 
-            className={`nav-link ${isActive('/requests') ? 'nav-link-active' : ''}`}
-          >
-            My Requests
-          </Link>
+        </div>
+
+        <div className="nav-user">
+          <div className="user-info">
+            <span className="user-name">{user?.username}</span>
+            <span className={`user-role user-role-${user?.role}`}>{user?.role}</span>
+          </div>
+          <button onClick={logout} className="logout-button">
+            Logout
+          </button>
         </div>
       </div>
     </nav>

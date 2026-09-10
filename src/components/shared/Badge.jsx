@@ -4,12 +4,12 @@ const Badge = ({ type, value }) => {
   const getBadgeClass = () => {
     if (type === 'status') {
       switch (value) {
-        case 'Pending':
-          return 'badge-status-pending';
+        case 'New':
+          return 'badge-status-new';
         case 'In Progress':
           return 'badge-status-in-progress';
-        case 'Completed':
-          return 'badge-status-completed';
+        case 'Done':
+          return 'badge-status-done';
         default:
           return 'badge-status-default';
       }

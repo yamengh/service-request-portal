@@ -22,8 +22,10 @@ const RequestForm = () => {
     priority: null
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  const categories = ['IT Support', 'Facilities', 'HR', 'Finance', 'Other'];
+  const categories = ['Hardware', 'Software', 'Network', 'Access', 'Other'];
   const priorities = ['Low', 'Medium', 'High', 'Urgent'];
 
   const handleChange = (e) => {
@@ -32,31 +34,40 @@ const RequestForm = () => {
     
     // Clear error for this field when user starts typing
     setErrors(prev => ({ ...prev, [name]: null }));
+    setSubmitError(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const { errors: validationErrors, isValid } = validateForm(formData);
     setErrors(validationErrors);
     
     if (isValid) {
-      // Add the request to context state
-      addRequest(formData);
+      setIsSubmitting(true);
+      setSubmitError(null);
       
-      setIsSubmitted(true);
+      const result = await addRequest(formData);
       
-      // Show success message then redirect
-      setTimeout(() => {
-        setIsSubmitted(false);
-        setFormData({
-          title: '',
-          description: '',
-          category: '',
-          priority: ''
-        });
-        navigate('/requests');
-      }, 2000);
+      if (result.success) {
+        setIsSubmitted(true);
+        
+        // Show success message then redirect
+        setTimeout(() => {
+          setIsSubmitted(false);
+          setFormData({
+            title: '',
+            description: '',
+            category: '',
+            priority: ''
+          });
+          navigate('/requests');
+        }, 2000);
+      } else {
+        setSubmitError(result.error);
+      }
+      
+      setIsSubmitting(false);
     }
   };
 
@@ -75,6 +86,12 @@ const RequestForm = () => {
 
   return (
     <form className="request-form" onSubmit={handleSubmit}>
+      {submitError && (
+        <div className="request-form-error">
+          {submitError}
+        </div>
+      )}
+      
       <Input
         type="text"
         name="title"
@@ -118,13 +135,14 @@ const RequestForm = () => {
       />
       
       <div className="request-form-actions">
-        <Button type="submit" variant="primary" disabled={!isValid}>
-          Submit Request
+        <Button type="submit" variant="primary" disabled={!isValid || isSubmitting}>
+          {isSubmitting ? 'Submitting...' : 'Submit Request'}
         </Button>
         <Button 
           type="button" 
           variant="secondary" 
           onClick={() => navigate(-1)}
+          disabled={isSubmitting}
         >
           Cancel
         </Button>

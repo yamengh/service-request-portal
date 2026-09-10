@@ -5,12 +5,34 @@ import { useRequests } from '../context/RequestsContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { requests } = useRequests();
+  const { requests, loading, error } = useRequests();
 
   const totalRequests = requests.length;
-  const pendingRequests = requests.filter(r => r.status === 'Pending').length;
+  const newRequests = requests.filter(r => r.status === 'New').length;
   const inProgressRequests = requests.filter(r => r.status === 'In Progress').length;
-  const completedRequests = requests.filter(r => r.status === 'Completed').length;
+  const doneRequests = requests.filter(r => r.status === 'Done').length;
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <h1 className="page-title">Dashboard</h1>
+        </div>
+        <div className="loading-state">Loading requests...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <h1 className="page-title">Dashboard</h1>
+        </div>
+        <div className="error-state">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -23,9 +45,9 @@ const Dashboard = () => {
 
       <div className="stats-grid">
         <StatsCard label="Total Requests" value={totalRequests} color="blue" />
-        <StatsCard label="Pending" value={pendingRequests} color="yellow" />
+        <StatsCard label="New" value={newRequests} color="yellow" />
         <StatsCard label="In Progress" value={inProgressRequests} color="blue" />
-        <StatsCard label="Completed" value={completedRequests} color="green" />
+        <StatsCard label="Done" value={doneRequests} color="green" />
       </div>
 
       <RecentRequests requests={requests} />

@@ -11,7 +11,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.badge-status-pending {
+.badge-status-new {
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   color: #92400e;
   border: 1px solid #fcd34d;
@@ -23,7 +23,7 @@
   border: 1px solid #93c5fd;
 }
 
-.badge-status-completed {
+.badge-status-done {
   background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   color: #065f46;
   border: 1px solid #6ee7b7;
