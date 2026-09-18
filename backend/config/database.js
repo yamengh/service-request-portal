@@ -3,14 +3,19 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 
+// Determine database directory based on environment
+const isTest = process.env.NODE_ENV === 'test';
+const dbDir = isTest 
+  ? path.join(__dirname, '../database-test') 
+  : path.join(__dirname, '../database');
+
 // Ensure database directory exists
-const dbDir = path.join(__dirname, '../database');
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
 // Create database connection
-const dbPath = path.join(dbDir, 'service-portal.db');
+const dbPath = path.join(dbDir, isTest ? 'test-portal.db' : 'service-portal.db');
 const db = new Database(dbPath);
 
 // Enable foreign keys
