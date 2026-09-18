@@ -13,16 +13,21 @@ export const validateDescription = (description) => {
 };
 
 export const validateCategory = (category) => {
-  const validCategories = ["IT Support", "Facilities", "HR", "Finance", "Other"];
+  const validCategories = ["Hardware", "Software", "Network", "Access", "Other"];
   if (!category) return "Category is required";
   if (!validCategories.includes(category)) return "Invalid category";
   return null;
 };
 
 export const validatePriority = (priority) => {
-  const validPriorities = ["Low", "Medium", "High", "Urgent"];
+  const validPriorities = ["Low", "Medium", "High", "Critical"];
   if (!priority) return "Priority is required";
   if (!validPriorities.includes(priority)) return "Invalid priority";
+  return null;
+};
+
+export const validateServiceId = (serviceId) => {
+  if (!serviceId) return "Service selection is required";
   return null;
 };
 
@@ -32,6 +37,7 @@ export const validateForm = (formData) => {
     description: validateDescription(formData.description),
     category: validateCategory(formData.category),
     priority: validatePriority(formData.priority),
+    service_id: validateServiceId(formData.service_id),
   };
   const isValid = Object.values(errors).every(error => error === null);
   return { errors, isValid };

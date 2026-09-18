@@ -23,6 +23,7 @@ const Navigation = () => {
 
         <div className="nav-menu">
           <Link to="/" className="nav-link">Dashboard</Link>
+          <Link to="/services" className="nav-link">Services</Link>
           <Link to="/requests" className="nav-link">My Requests</Link>
           <Link to="/new-request" className="nav-link">New Request</Link>
           <Link to="/notifications" className="nav-link">

@@ -16,6 +16,20 @@
   margin-bottom: 1rem;
 }
 
+.no-services-warning {
+  padding: 1rem;
+  background-color: var(--warning-light);
+  border: 1px solid var(--warning);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.no-services-warning p {
+  margin: 0 0 1rem 0;
+  color: var(--warning);
+  font-size: 0.875rem;
+}
+
 .request-form-actions {
   display: flex;
   gap: 1rem;

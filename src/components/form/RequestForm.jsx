@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../shared/Input';
 import Button from '../shared/Button';
 import { validateForm } from '../../utils/validation';
 import { useRequests } from '../../context/RequestsContext';
+import { serviceService } from '../../services/serviceService';
 import './RequestForm.css';
 
 const RequestForm = () => {
@@ -13,20 +14,41 @@ const RequestForm = () => {
     title: '',
     description: '',
     category: '',
-    priority: ''
+    priority: '',
+    service_id: ''
   });
   const [errors, setErrors] = useState({
     title: null,
     description: null,
     category: null,
-    priority: null
+    priority: null,
+    service_id: null
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [subscribedServices, setSubscribedServices] = useState([]);
 
   const categories = ['Hardware', 'Software', 'Network', 'Access', 'Other'];
-  const priorities = ['Low', 'Medium', 'High', 'Urgent'];
+  const priorities = ['Low', 'Medium', 'High', 'Critical'];
+
+  useEffect(() => {
+    loadSubscribedServices();
+  }, []);
+
+  const loadSubscribedServices = async () => {
+    try {
+      const services = await serviceService.getMySubscriptions();
+      setSubscribedServices(services);
+      
+      // Auto-select first service if available
+      if (services.length > 0 && !formData.service_id) {
+        setFormData(prev => ({ ...prev, service_id: services[0].id.toString(), category: services[0].category }));
+      }
+    } catch (error) {
+      console.error('Failed to load subscribed services:', error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -59,7 +81,8 @@ const RequestForm = () => {
             title: '',
             description: '',
             category: '',
-            priority: ''
+            priority: '',
+            service_id: ''
           });
           navigate('/requests');
         }, 2000);
@@ -69,6 +92,19 @@ const RequestForm = () => {
       
       setIsSubmitting(false);
     }
+  };
+
+  const handleServiceChange = (e) => {
+    const serviceId = e.target.value;
+    const selectedService = subscribedServices.find(s => s.id === parseInt(serviceId));
+    
+    setFormData(prev => ({
+      ...prev,
+      service_id: serviceId,
+      category: selectedService?.category || prev.category
+    }));
+    
+    setErrors(prev => ({ ...prev, service_id: null }));
   };
 
   const { isValid } = validateForm(formData);
@@ -122,6 +158,31 @@ const RequestForm = () => {
         options={categories}
         required
       />
+      
+      <Input
+        type="select"
+        name="service_id"
+        label="Service"
+        value={formData.service_id}
+        onChange={handleServiceChange}
+        error={errors.service_id}
+        options={subscribedServices.map(s => ({ value: s.id.toString(), label: s.name }))}
+        required
+        disabled={subscribedServices.length === 0}
+      />
+      
+      {subscribedServices.length === 0 && (
+        <div className="no-services-warning">
+          <p>You need to subscribe to services before creating requests.</p>
+          <Button 
+            type="button" 
+            variant="primary" 
+            onClick={() => navigate('/services')}
+          >
+            Browse Services
+          </Button>
+        </div>
+      )}
       
       <Input
         type="select"

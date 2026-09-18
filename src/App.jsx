@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import MyRequests from './pages/MyRequests';
 import NewRequest from './pages/NewRequest';
 import RequestDetails from './pages/RequestDetails';
+import ServiceCatalog from './pages/ServiceCatalog';
 import Login from './pages/Login';
 import Notifications from './pages/Notifications';
 import './App.css';
@@ -39,6 +40,7 @@ function App() {
                       <main className="main-content">
                         <Routes>
                           <Route path="/" element={<Dashboard />} />
+                          <Route path="/services" element={<ServiceCatalog />} />
                           <Route path="/requests" element={<MyRequests />} />
                           <Route path="/new-request" element={<NewRequest />} />
                           <Route path="/requests/:id" element={<RequestDetails />} />
