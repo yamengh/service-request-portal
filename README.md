@@ -122,4 +122,4 @@ Additional project documentation is available in the `docs/` directory.
 ## Internship Progress
 
 * Week 1 — Frontend MVP ✅
-* Week 2 — Full-stack service application 🔄
+* Week 2 — Full-stack service application ✅
