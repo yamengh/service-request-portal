@@ -3,6 +3,7 @@ const { generateSummary, generateTestCases } = require('../services/aiService');
 const { createAuditLog } = require('../services/auditService');
 const { eventBus, EventTypes } = require('../services/eventBus');
 const { initializeWorkflow, processClassification } = require('../services/workflowEngine');
+const { startProcessInstance, isCamundaWorkflowEnabled } = require('../services/camundaService');
 
 const getAllRequests = (req, res) => {
   let requests;
@@ -89,8 +90,13 @@ const createRequest = (req, res) => {
 
   const newRequest = db.prepare('SELECT * FROM requests WHERE id = ?').get(result.lastInsertRowid);
 
-  // Initialize workflow
-  initializeWorkflow(result.lastInsertRowid, req.user.id);
+  if (isCamundaWorkflowEnabled()) {
+    startProcessInstance(result.lastInsertRowid, newRequest).catch(err => {
+      console.error('Failed to start Camunda process:', err);
+    });
+  } else {
+    initializeWorkflow(result.lastInsertRowid, req.user.id);
+  }
 
   // Create audit log
   createAuditLog(
@@ -136,6 +142,10 @@ const updateRequestStatus = (req, res) => {
 
   if (!request) {
     return res.status(404).json({ error: 'Request not found' });
+  }
+
+  if (isCamundaWorkflowEnabled() && ['Approved', 'Rejected'].includes(status)) {
+    return res.status(409).json({ error: 'Final status must be set through the Camunda approval workflow' });
   }
 
   const validTransitions = {

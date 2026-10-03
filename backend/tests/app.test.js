@@ -506,6 +506,137 @@ describe('Workflow Tests', () => {
     expect(rejectResponse.body.request.status).toBe('Rejected');
   });
 
+  test('Camunda workers produce one final outcome and a defined rejection reason', async () => {
+    const { updateApprovedWorker, updateRejectedWorker } = require('../services/camundaWorkers');
+    const applicant = db.prepare('SELECT id FROM users WHERE username = ?').get('testapplicant');
+    const approvedFirstId = db.prepare(`
+      INSERT INTO requests (title, description, category, priority, user_id)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Camunda outcome test', 'Test mutually exclusive final outcomes', 'Hardware', 'Medium', applicant.id).lastInsertRowid;
+    const approvedJob = {
+      variables: { requestId: approvedFirstId, userId: applicant.id, approved: true, reason: 'Approved by reviewer' },
+      complete: jest.fn().mockResolvedValue(undefined),
+      fail: jest.fn().mockResolvedValue(undefined)
+    };
+    const laterRejectedJob = {
+      variables: { requestId: approvedFirstId, userId: applicant.id, approved: false, reason: 'Late conflicting rejection' },
+      complete: jest.fn().mockResolvedValue(undefined),
+      fail: jest.fn().mockResolvedValue(undefined)
+    };
+
+    await updateApprovedWorker(approvedJob);
+    await updateRejectedWorker(laterRejectedJob);
+
+    const approvedFirst = db.prepare('SELECT status FROM requests WHERE id = ?').get(approvedFirstId);
+    const approvedFirstNotifications = db.prepare(`
+      SELECT message FROM notifications
+      WHERE request_id = ? AND user_id = ? AND message LIKE 'Your request%'
+    `).all(approvedFirstId, applicant.id);
+    expect(approvedFirst.status).toBe('Approved');
+    expect(approvedFirstNotifications).toHaveLength(1);
+    expect(approvedFirstNotifications[0].message).toContain('has been approved');
+    expect(approvedFirstNotifications[0].message).not.toContain('rejected');
+    expect(laterRejectedJob.complete).toHaveBeenCalledWith(expect.objectContaining({ status: 'Approved' }));
+
+    const rejectedId = db.prepare(`
+      INSERT INTO requests (title, description, category, priority, user_id)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Camunda rejection test', 'Test rejection reason fallback', 'Hardware', 'Medium', applicant.id).lastInsertRowid;
+    const rejectedJob = {
+      variables: { requestId: rejectedId, userId: applicant.id },
+      complete: jest.fn().mockResolvedValue(undefined),
+      fail: jest.fn().mockResolvedValue(undefined)
+    };
+
+    await updateRejectedWorker(rejectedJob);
+
+    const rejected = db.prepare('SELECT status FROM requests WHERE id = ?').get(rejectedId);
+    const rejectedNotifications = db.prepare(`
+      SELECT message FROM notifications
+      WHERE request_id = ? AND user_id = ? AND message LIKE 'Your request%'
+    `).all(rejectedId, applicant.id);
+    expect(rejected.status).toBe('Rejected');
+    expect(rejectedNotifications).toHaveLength(1);
+    expect(rejectedNotifications[0].message).toContain('has been rejected:');
+    expect(rejectedNotifications[0].message).not.toContain('undefined');
+
+    const misroutedRejectId = db.prepare(`
+      INSERT INTO requests (title, description, category, priority, user_id)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Tasklist rejection test', 'Test rejection through the deployed approval branch', 'Hardware', 'Medium', applicant.id).lastInsertRowid;
+    const misroutedRejectJob = {
+      variables: { requestId: misroutedRejectId, userId: applicant.id, approved: false },
+      complete: jest.fn().mockResolvedValue(undefined),
+      fail: jest.fn().mockResolvedValue(undefined)
+    };
+
+    await updateApprovedWorker(misroutedRejectJob);
+
+    const misroutedRejected = db.prepare('SELECT status FROM requests WHERE id = ?').get(misroutedRejectId);
+    const misroutedNotifications = db.prepare(`
+      SELECT message FROM notifications
+      WHERE request_id = ? AND user_id = ? AND message LIKE 'Your request%'
+    `).all(misroutedRejectId, applicant.id);
+    expect(misroutedRejected.status).toBe('Rejected');
+    expect(misroutedNotifications).toHaveLength(1);
+    expect(misroutedNotifications[0].message).toContain('has been rejected: No reason provided');
+    expect(misroutedRejectJob.complete).toHaveBeenCalledWith(expect.objectContaining({ status: 'Rejected' }));
+  });
+
+  test('approval BPMN routes true and false decisions to separate outcome workers', () => {
+    const bpmn = fs.readFileSync(path.join(__dirname, '../../docs/week-4/service-request-approval.bpmn'), 'utf8');
+    const gateway = bpmn.match(/<bpmn:exclusiveGateway\b[^>]*id="Gateway_ApprovalDecision"[^>]*>([\s\S]*?)<\/bpmn:exclusiveGateway>/);
+
+    expect(bpmn).toContain('<bpmn:process id="Process_1r2vmgs"');
+    expect(gateway).not.toBeNull();
+    expect(gateway[0]).toContain('default="Flow_5"');
+    expect([...gateway[1].matchAll(/<bpmn:outgoing>/g)]).toHaveLength(2);
+    expect(bpmn).toMatch(/<bpmn:sequenceFlow id="Flow_4" name="Approved" sourceRef="Gateway_ApprovalDecision" targetRef="Activity_UpdateApproved">[\s\S]*?<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=approved = true<\/bpmn:conditionExpression>/);
+    expect(bpmn).toMatch(/<bpmn:sequenceFlow id="Flow_5" name="Rejected" sourceRef="Gateway_ApprovalDecision" targetRef="Activity_UpdateRejected">[\s\S]*?<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=approved = false<\/bpmn:conditionExpression>/);
+  });
+
+  test('Camunda mode skips local workflow initialization and finalization', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousCamundaEnabled = process.env.CAMUNDA_ENABLED;
+    process.env.NODE_ENV = 'development';
+    process.env.CAMUNDA_ENABLED = 'true';
+
+    try {
+      const createResponse = await request(app)
+        .post('/api/requests')
+        .set('Authorization', `Bearer ${applicantToken}`)
+        .send({
+          title: 'Camunda-only workflow request',
+          description: 'This request must be controlled only by Camunda.',
+          category: 'Hardware',
+          priority: 'Medium'
+        });
+      const requestId = createResponse.body.id;
+
+      expect(createResponse.status).toBe(201);
+      expect(db.prepare('SELECT COUNT(*) as count FROM workflow_states WHERE request_id = ?').get(requestId).count).toBe(0);
+
+      const approveResponse = await request(app)
+        .post(`/api/workflow/approve/${requestId}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({ reason: 'Must use Camunda' });
+      const statusResponse = await request(app)
+        .put(`/api/requests/${requestId}/status`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({ status: 'Rejected' });
+
+      expect(approveResponse.status).toBe(409);
+      expect([400, 409]).toContain(statusResponse.status);
+      expect(db.prepare('SELECT status FROM requests WHERE id = ?').get(requestId).status).toBe('Submitted');
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+
+      if (previousCamundaEnabled === undefined) delete process.env.CAMUNDA_ENABLED;
+      else process.env.CAMUNDA_ENABLED = previousCamundaEnabled;
+    }
+  });
+
   test('Applicant cannot approve requests', async () => {
     // Create a test service
     const serviceResponse = await request(app)

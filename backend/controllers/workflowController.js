@@ -2,6 +2,7 @@ const db = require('../config/database');
 const { createAuditLog } = require('../services/auditService');
 const { eventBus, EventTypes } = require('../services/eventBus');
 const externalApiService = require('../services/externalApi.js');
+const { isCamundaWorkflowEnabled } = require('../services/camundaService');
 const { 
   getCurrentWorkflowState, 
   getWorkflowHistory,
@@ -48,6 +49,10 @@ const getWorkflowHistoryHandler = (req, res) => {
  * Approve a request
  */
 const approveRequestHandler = (req, res) => {
+  if (isCamundaWorkflowEnabled()) {
+    return res.status(409).json({ error: 'Approve or reject this request through Camunda Tasklist' });
+  }
+
   try {
     const { requestId } = req.params;
     const { reason } = req.body;
@@ -132,6 +137,10 @@ const approveRequestHandler = (req, res) => {
  * Reject a request
  */
 const rejectRequestHandler = (req, res) => {
+  if (isCamundaWorkflowEnabled()) {
+    return res.status(409).json({ error: 'Approve or reject this request through Camunda Tasklist' });
+  }
+
   try {
     const { requestId } = req.params;
     const { reason } = req.body;

@@ -1,33 +1,28 @@
-import api from './api';
+import apiCall from './api';
 
 export const serviceService = {
   // Get all available services
   getAllServices: async () => {
-    const response = await api.get('/services');
-    return response.data;
+    return apiCall('/services');
   },
 
   // Get service by ID
   getServiceById: async (id) => {
-    const response = await api.get(`/services/${id}`);
-    return response.data;
+    return apiCall(`/services/${id}`);
   },
 
   // Get user's subscriptions
   getMySubscriptions: async () => {
-    const response = await api.get('/services/subscriptions/my');
-    return response.data;
+    return apiCall('/services/subscriptions/my');
   },
 
   // Subscribe to a service
   subscribeToService: async (serviceId) => {
-    const response = await api.post(`/services/subscriptions/${serviceId}`);
-    return response.data;
+    return apiCall(`/services/subscriptions/${serviceId}`, { method: 'POST' });
   },
 
   // Unsubscribe from a service
   unsubscribeFromService: async (serviceId) => {
-    const response = await api.delete(`/services/subscriptions/${serviceId}`);
-    return response.data;
+    return apiCall(`/services/subscriptions/${serviceId}`, { method: 'DELETE' });
   }
 };

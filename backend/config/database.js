@@ -84,6 +84,8 @@ const initDatabase = () => {
       ai_summary TEXT,
       ai_positive_tests TEXT,
       ai_negative_tests TEXT,
+      ai_classification TEXT,
+      camunda_process_instance_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id),
@@ -92,6 +94,38 @@ const initDatabase = () => {
       FOREIGN KEY (manager_id) REFERENCES users(id)
     )
   `);
+
+  // Migration: Add service_id column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE requests ADD COLUMN service_id INTEGER`);
+    console.log('Added service_id column to requests table');
+  } catch (error) {
+    // Column already exists, ignore
+  }
+
+  // Migration: Add workflow_status column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE requests ADD COLUMN workflow_status TEXT`);
+    console.log('Added workflow_status column to requests table');
+  } catch (error) {
+    // Column already exists, ignore
+  }
+
+  // Migration: Add ai_classification column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE requests ADD COLUMN ai_classification TEXT`);
+    console.log('Added ai_classification column to requests table');
+  } catch (error) {
+    // Column already exists, ignore
+  }
+
+  // Migration: Add camunda_process_instance_id column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE requests ADD COLUMN camunda_process_instance_id TEXT`);
+    console.log('Added camunda_process_instance_id column to requests table');
+  } catch (error) {
+    // Column already exists, ignore
+  }
 
   // Workflow states table
   db.exec(`
@@ -213,8 +247,31 @@ const seedServices = () => {
   }
 };
 
+// Add Camunda integration columns if they don't exist (migration)
+const addCamundaColumns = () => {
+  try {
+    // Check if ai_classification column exists
+    const tableInfo = db.pragma('table_info(requests)');
+    const hasAiClassification = tableInfo.some(col => col.name === 'ai_classification');
+    const hasCamundaProcessId = tableInfo.some(col => col.name === 'camunda_process_instance_id');
+
+    if (!hasAiClassification) {
+      db.exec('ALTER TABLE requests ADD COLUMN ai_classification TEXT');
+      console.log('Added ai_classification column to requests table');
+    }
+
+    if (!hasCamundaProcessId) {
+      db.exec('ALTER TABLE requests ADD COLUMN camunda_process_instance_id TEXT');
+      console.log('Added camunda_process_instance_id column to requests table');
+    }
+  } catch (error) {
+    console.log('Camunda columns migration check skipped:', error.message);
+  }
+};
+
 // Initialize database on module load
 initDatabase();
+addCamundaColumns();
 seedUsers();
 seedServices();
 

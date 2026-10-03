@@ -25,12 +25,12 @@ const validateRequest = (req, res, next) => {
     return res.status(400).json({ error: 'Priority is required' });
   }
 
-  const validPriorities = ['Low', 'Medium', 'High', 'Urgent'];
+  const validPriorities = ['Low', 'Medium', 'High', 'Critical', 'Urgent'];
   if (!validPriorities.includes(priority)) {
     return res.status(400).json({ error: 'Invalid priority' });
   }
 
-  const validCategories = ['Hardware', 'Software', 'Network', 'Access', 'Other'];
+  const validCategories = ['Hardware', 'Software', 'Network', 'Access', 'Infrastructure', 'Support', 'Other'];
   if (!validCategories.includes(category)) {
     return res.status(400).json({ error: 'Invalid category' });
   }

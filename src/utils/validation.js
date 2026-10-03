@@ -13,14 +13,14 @@ export const validateDescription = (description) => {
 };
 
 export const validateCategory = (category) => {
-  const validCategories = ["Hardware", "Software", "Network", "Access", "Other"];
+  const validCategories = ["Hardware", "Software", "Network", "Access", "Infrastructure", "Support", "Other"];
   if (!category) return "Category is required";
   if (!validCategories.includes(category)) return "Invalid category";
   return null;
 };
 
 export const validatePriority = (priority) => {
-  const validPriorities = ["Low", "Medium", "High", "Critical"];
+  const validPriorities = ["Low", "Medium", "High", "Critical", "Urgent"];
   if (!priority) return "Priority is required";
   if (!validPriorities.includes(priority)) return "Invalid priority";
   return null;

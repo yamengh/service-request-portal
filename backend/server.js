@@ -8,6 +8,8 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const workflowRoutes = require('./routes/workflowRoutes');
 const auditRoutes = require('./routes/auditRoutes');
+const camundaRoutes = require('./routes/camundaRoutes');
+const { startWorkers } = require('./services/camundaWorkers');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +26,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/workflow', workflowRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/camunda', camundaRoutes);
 
 // External API mock endpoints
 app.get('/api/external/status', (req, res) => {
@@ -60,10 +63,23 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
-});
+if (require.main === module) {
+  app.listen(PORT, async () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
+
+    // Connect workers to the process already deployed in Camunda Modeler.
+    if (process.env.CAMUNDA_ENABLED !== 'false') {
+      console.log('Initializing Camunda integration...');
+      try {
+        await startWorkers();
+      } catch (error) {
+        console.log('Failed to start Camunda workers (continuing without Camunda):', error.message);
+      }
+    } else {
+      console.log('Camunda integration disabled via CAMUNDA_ENABLED=false');
+    }
+  });
+}
 
 module.exports = app;

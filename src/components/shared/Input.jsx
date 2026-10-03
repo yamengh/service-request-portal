@@ -44,11 +44,16 @@ const Input = ({ type = 'text', label, value, onChange, error, options, name, re
           required={required}
         >
           <option value="">Select {label?.toLowerCase()}</option>
-          {options?.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
+          {options?.map((option) => {
+            const optionValue = typeof option === 'object' ? option.value : option;
+            const optionLabel = typeof option === 'object' ? option.label : option;
+
+            return (
+              <option key={optionValue} value={optionValue}>
+                {optionLabel}
+              </option>
+            );
+          })}
         </select>
         {error && <span className="input-error-message">{error}</span>}
       </div>

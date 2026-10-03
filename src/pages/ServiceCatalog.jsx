@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { serviceService } from '../services/serviceService';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/shared/Card';
@@ -7,6 +8,8 @@ import Badge from '../components/shared/Badge';
 import './ServiceCatalog.css';
 
 const ServiceCatalog = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [services, setServices] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -74,6 +77,11 @@ const ServiceCatalog = () => {
       <div className="catalog-header">
         <h1>Service Catalog</h1>
         <p>Browse and subscribe to available services</p>
+        {location.state?.returnToRequest && (
+          <Button variant="secondary" onClick={() => navigate('/new-request')}>
+            Back to New Request
+          </Button>
+        )}
       </div>
 
       <div className="catalog-filters">

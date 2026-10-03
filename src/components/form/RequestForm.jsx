@@ -7,15 +7,25 @@ import { useRequests } from '../../context/RequestsContext';
 import { serviceService } from '../../services/serviceService';
 import './RequestForm.css';
 
+const REQUEST_DRAFT_KEY = 'serviceRequestDraft';
+const INITIAL_FORM_DATA = {
+  title: '',
+  description: '',
+  category: '',
+  priority: '',
+  service_id: ''
+};
+
 const RequestForm = () => {
   const navigate = useNavigate();
   const { addRequest } = useRequests();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    priority: '',
-    service_id: ''
+  const [formData, setFormData] = useState(() => {
+    try {
+      const savedDraft = sessionStorage.getItem(REQUEST_DRAFT_KEY);
+      return savedDraft ? { ...INITIAL_FORM_DATA, ...JSON.parse(savedDraft) } : { ...INITIAL_FORM_DATA };
+    } catch {
+      return { ...INITIAL_FORM_DATA };
+    }
   });
   const [errors, setErrors] = useState({
     title: null,
@@ -29,12 +39,21 @@ const RequestForm = () => {
   const [submitError, setSubmitError] = useState(null);
   const [subscribedServices, setSubscribedServices] = useState([]);
 
-  const categories = ['Hardware', 'Software', 'Network', 'Access', 'Other'];
+  const categories = ['Hardware', 'Software', 'Network', 'Access', 'Infrastructure', 'Support', 'Other'];
   const priorities = ['Low', 'Medium', 'High', 'Critical'];
 
   useEffect(() => {
     loadSubscribedServices();
   }, []);
+
+  useEffect(() => {
+    if (isSubmitted || !Object.values(formData).some(Boolean)) {
+      sessionStorage.removeItem(REQUEST_DRAFT_KEY);
+      return;
+    }
+
+    sessionStorage.setItem(REQUEST_DRAFT_KEY, JSON.stringify(formData));
+  }, [formData, isSubmitted]);
 
   const loadSubscribedServices = async () => {
     try {
@@ -72,18 +91,13 @@ const RequestForm = () => {
       const result = await addRequest(formData);
       
       if (result.success) {
+        sessionStorage.removeItem(REQUEST_DRAFT_KEY);
         setIsSubmitted(true);
         
         // Show success message then redirect
         setTimeout(() => {
           setIsSubmitted(false);
-          setFormData({
-            title: '',
-            description: '',
-            category: '',
-            priority: '',
-            service_id: ''
-          });
+          setFormData({ ...INITIAL_FORM_DATA });
           navigate('/requests');
         }, 2000);
       } else {
@@ -177,7 +191,7 @@ const RequestForm = () => {
           <Button 
             type="button" 
             variant="primary" 
-            onClick={() => navigate('/services')}
+            onClick={() => navigate('/services', { state: { returnToRequest: true } })}
           >
             Browse Services
           </Button>
